@@ -1,61 +1,55 @@
 import uuid
-
 from django.contrib import admin
 from import_export import resources, fields
 from import_export.admin import ImportExportModelAdmin
 from .models import College, Department, Program
 
 class CollegeResource(resources.ModelResource):
-    id = fields.Field(attribute='id', readonly=True)  # Read-only for imports
+    id = fields.Field(attribute='id', readonly=True)
 
     class Meta:
         model = College
-        fields = ('name', 'chairman', 'address')  # ID excluded from import
-        export_order = ('id', 'name', 'chairman', 'address')  # ID included in export
+        fields = ('name', 'chairman', 'address')
+        export_order = ('id', 'name', 'chairman', 'address')
 
     def before_import_row(self, row, **kwargs):
-        """
-        Called before each Excel row is imported. We insert a fresh UUID
-        into the row data so that when ModelResource builds the instance,
-        the `uuid` field is populated.
-        """
-        # generate a hex string or leave as uuid.UUID
-        row['uuid'] = str(uuid.uuid4())
+        """Generate UUID for new records during import."""
+        if not row.get('id'):
+            row['id'] = str(uuid.uuid4())
 
-    def get_instance(self, instance_loader, row):
-        """
-        Prevent matching on UUID (since it's brand new). Always create new.
-        """
-        return None
 class DepartmentResource(resources.ModelResource):
     id = fields.Field(attribute='id', readonly=True)
+    college = fields.Field(attribute='college', column_name='college')
 
     class Meta:
         model = Department
         fields = ('name', 'head', 'college')
         export_order = ('id', 'name', 'head', 'college')
+
     def before_import_row(self, row, **kwargs):
-        row['uuid'] = str(uuid.uuid4())
-    def get_instance(self, instance_loader, row):
-        return None
+        if not row.get('id'):
+            row['id'] = str(uuid.uuid4())
+
 class ProgramResource(resources.ModelResource):
     id = fields.Field(attribute='id', readonly=True)
+    department = fields.Field(attribute='department', column_name='department')
 
     class Meta:
         model = Program
         fields = ('name', 'head', 'department')
         export_order = ('id', 'name', 'head', 'department')
+
     def before_import_row(self, row, **kwargs):
-        row['uuid'] = str(uuid.uuid4())
-    def get_instance(self, instance_loader, row):
-        return None
+        if not row.get('id'):
+            row['id'] = str(uuid.uuid4())
+
 # Admin classes
 @admin.register(College)
 class CollegeAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     resource_class = CollegeResource
     list_display = ('name', 'chairman_email', 'address')
     search_fields = ('name', 'chairman__email', 'chairman__name_en', 'address')
-    autocomplete_fields = ['chairman']  # Enables search for chairman (CustomUser)
+    autocomplete_fields = ['chairman']
 
     def chairman_email(self, obj):
         return obj.chairman.email if obj.chairman else None
@@ -66,8 +60,8 @@ class DepartmentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     resource_class = DepartmentResource
     list_display = ('name', 'head_email', 'college_name')
     search_fields = ('name', 'head__email', 'head__name_en', 'college__name')
-    list_filter = ('college',)  # Filter departments by college
-    autocomplete_fields = ['head', 'college']  # Search for head (CustomUser) and college
+    list_filter = ('college',)
+    autocomplete_fields = ['head', 'college']
 
     def head_email(self, obj):
         return obj.head.email if obj.head else None
@@ -76,10 +70,6 @@ class DepartmentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     def college_name(self, obj):
         return obj.college.name if obj.college else None
     college_name.short_description = 'College Name'
-
-class ProgramResource(resources.ModelResource):
-    class Meta:
-        model = Program
 
 @admin.register(Program)
 class ProgramAdmin(ImportExportModelAdmin, admin.ModelAdmin):

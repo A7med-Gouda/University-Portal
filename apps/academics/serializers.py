@@ -1,29 +1,27 @@
 from rest_framework import serializers
-from .models import College, Department
+from .models import College, Department, Program
 from apps.users.serializers import ShortCustomUserSerializer
 
 class CollegeSerializer(serializers.ModelSerializer):
-
-    cheirman_ = ShortCustomUserSerializer(read_only=True)
+    chairman_details = ShortCustomUserSerializer(source='chairman', read_only=True)
 
     class Meta:
         model = College
-        fields = ['id', 'name', 'chairman', 'address', 'cheirman_']
-
-    def get_cheirman_(self, obj):
-        if obj.head:
-            return ShortCustomUserSerializer(obj.head).data
-        return None
+        fields = ['id', 'name', 'chairman', 'address', 'chairman_details']
 
 class DepartmentSerializer(serializers.ModelSerializer):
-
-    head_ = ShortCustomUserSerializer(read_only=True)
+    head_details = ShortCustomUserSerializer(source='head', read_only=True)
+    college_name = serializers.CharField(source='college.name', read_only=True)
 
     class Meta:
         model = Department
-        fields = ['id', 'name', 'head', 'college', 'head_']
+        fields = ['id', 'name', 'head', 'college', 'head_details', 'college_name']
 
-    def get_head_(self, obj):
-        if obj.head:
-            return ShortCustomUserSerializer(obj.head).data
-        return None
+class ProgramSerializer(serializers.ModelSerializer):
+    head_details = ShortCustomUserSerializer(source='head', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    college_name = serializers.CharField(source='department.college.name', read_only=True)
+
+    class Meta:
+        model = Program
+        fields = ['id', 'name', 'head', 'department', 'head_details', 'department_name', 'college_name']
