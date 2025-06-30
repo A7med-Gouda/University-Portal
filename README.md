@@ -49,7 +49,6 @@ The University Portal aims to:
 - **Backend:** Django, Django REST Framework
 - **Frontend:** Angular
 - **Database:** PostgreSQL
-- **Containerization:** Docker
 - **Version Control:** Git, GitHub
 
 ## 👥 User Roles
